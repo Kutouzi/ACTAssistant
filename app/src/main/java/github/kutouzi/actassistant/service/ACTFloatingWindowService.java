@@ -57,8 +57,6 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     //////////////////////
     //全局标记相关
-    private static boolean isServiceInterrupted = true;
-
     private static int _scanDialogFlag = 0;
     //////////////////////////////////
 
@@ -72,8 +70,13 @@ public class ACTFloatingWindowService extends AccessibilityService {
         public void onReceive(Context context, Intent intent) {
             if (CREATE_OR_DESTROY_ACT_FLOATING_WINGDOW_SERVICE.equals(intent.getAction())) {
                 if(Objects.equals(intent.getStringExtra("key"), "Create")){
+                    if(_windowView != null){
+                        //如果这个窗口还存在，就是重复创建悬浮窗，销毁掉当前的并且回到MainActivity
+                        _returnMainActivityButton.callOnClick();
+                    }
+                    // 先创建悬浮窗
                     CreateFloatingWindow();
-                    // 创建悬浮窗里的开关
+                    // 再创建悬浮窗里的开关
                     CreateListeningDialogSwitch();
                     CreateStartApplicationSwitch();
                     CreateReturnMainActivitySwitch();
@@ -195,7 +198,8 @@ public class ACTFloatingWindowService extends AccessibilityService {
             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            RemoveFloatingWindow();
+            onDestroy();
+
         });
     }
 
@@ -205,18 +209,22 @@ public class ACTFloatingWindowService extends AccessibilityService {
         _swipeUpButton.setOnClickListener(v->{
             if(_swipeUpButton._isToggle){
                 // 如果上划按钮被按过
-                ActionUtil.processSwipe(_TAG,_swipeUpButton._isToggle,getResources(),this);
+                // 停止上划
+                ActionUtil.removeSwipeAction();
+                //ActionUtil.processSwipe(_TAG,_swipeUpButton._isToggle,getResources(),this);
                 SwitchButtonColor(_swipeUpButton);
                 SwitchOtherButtonStates();
                 _swipeUpButton._isToggle = false;
+                GT.toast_time("上划结束",1000);
             }else {
                 // 如果上划按钮没被按过
+                // 直接开始上划
                 ActionUtil.processSwipe(_TAG,_swipeUpButton._isToggle,getResources(),this);
                 SwitchButtonColor(_swipeUpButton);
                 SwitchOtherButtonStates();
                 _swipeUpButton._isToggle = true;
+                GT.toast_time("上划开始",1000);
             }
-
         });
     }
 
@@ -275,27 +283,27 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 }
             }
         }
-        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED){
-            //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
-            switch (_scanDialogFlag){
-                case PINGDUODUO:
-                    new PingduoduoUtil().cancelDialog(_TAG,getRootInActiveWindow(),this);
-                    break;
-                case MEITUAN:
-                    new MeituanUtil().cancelDialog(_TAG,getRootInActiveWindow(),this);
-                    break;
-                default:
-                    break;
-            }
+        if(_listeningDialogButton._isToggle) {
+            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
+                switch (_scanDialogFlag) {
+                    case PINGDUODUO:
+                        new PingduoduoUtil().cancelDialog(_TAG, getRootInActiveWindow(), this);
+                        break;
+                    case MEITUAN:
+                        new MeituanUtil().cancelDialog(_TAG, getRootInActiveWindow(), this);
+                        break;
+                    default:
+                        break;
+                }
 
+            }
         }
     }
 
     @Override
     public void onInterrupt() {
-        ActionUtil.removeSwipeAction();
-        isServiceInterrupted = true;
-        Log.i(_TAG,"上划中断");
+
     }
 
     @Override
