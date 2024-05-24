@@ -5,4 +5,5 @@
     <string name="settingButtonDescription">设置</string>
     <string name="actServiceButtonDescription">服务开关</string>
     <string name="returnMainActivityButtonDescription">返回应用</string>
+    <string name="startApplicationButtonDescription">开启应用</string>
 </resources>
