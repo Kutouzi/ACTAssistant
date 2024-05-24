@@ -10,7 +10,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Build;
@@ -58,10 +57,9 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     //////////////////////
     //全局标记相关
-    private boolean _allButtonInServiceStartedState = true;
     private static boolean isServiceInterrupted = true;
 
-    private static int scanDialogFlag = 0;
+    private static int _scanDialogFlag = 0;
     //////////////////////////////////
 
     @Override
@@ -90,15 +88,6 @@ public class ACTFloatingWindowService extends AccessibilityService {
         }
     };
 
-
-
-
-    public void onContinue(){
-        ActionUtil.removeSwipeAction();
-        ActionUtil.processSwipe(_TAG,isServiceInterrupted,getResources(),this);
-        isServiceInterrupted = false;
-        Log.i(_TAG,"上划继续");
-    }
     @Override
     public void onCreate() {
         super.onCreate();
@@ -163,7 +152,6 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 SwitchOtherButtonStates();
                 _listeningDialogButton._isToggle = false;
                 Log.i(_TAG,"服务开关已被禁用");
-
             }else {
                 // 如果按钮没按过
                 SwitchButtonColor(_listeningDialogButton);
@@ -180,6 +168,8 @@ public class ACTFloatingWindowService extends AccessibilityService {
         _startApplicationButton.setOnClickListener(v->{
             try{
                 RequestStartApplication(PINGDUODUO_PAKAGENAME);
+                _startApplicationButton._isToggle = true;
+                _startApplicationButton.setEnabled(false);
             }catch (PakageNotFoundException e){
                 Log.i(_TAG,e.getMessage());
                 GT.toast_time("自动开启应用失败，请手动打开",8000);
@@ -237,16 +227,17 @@ public class ACTFloatingWindowService extends AccessibilityService {
             _startApplicationButton.setEnabled(false);
             DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,0,R.color.button_color);
             DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,1,R.color.button_rounded_color);
-            _allButtonInServiceStartedState = false;
+            DrawableUtil.setDrawableBackground(this,_startApplicationButton,0,R.color.button_color);
+            DrawableUtil.setDrawableBackground(this,_startApplicationButton,1,R.color.button_rounded_color);
             Log.i(_TAG,"悬浮窗开启应用按钮和返回按钮已禁用");
-
         }else {
             // 如果没有被按下过
             _returnMainActivityButton.setEnabled(true);
             _startApplicationButton.setEnabled(true);
             DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,0,R.color.disable_button_color);
             DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,1,R.color.disable_button_rounded_color);
-            _allButtonInServiceStartedState = true;
+            DrawableUtil.setDrawableBackground(this,_startApplicationButton,0,R.color.disable_button_color);
+            DrawableUtil.setDrawableBackground(this,_startApplicationButton,1,R.color.disable_button_rounded_color);
             Log.i(_TAG,"悬浮窗开启应用按钮和返回按钮已启用");
         }
     }
@@ -266,35 +257,37 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        switch (event.getEventType()){
-            case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
-                if(event.getPackageName() != null){
+        // 需要启动应用按钮被按过才触发检测
+        if(_startApplicationButton._isToggle){
+            // 还需要窗口变化才能检测
+            if(event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED){
+                if(getRootInActiveWindow().getPackageName() != null){
                     //执行检查拼多多、美团等软件是否启动的逻辑
-                    scanDialogFlag = PingduoduoUtil.pingduoduoFunction(_TAG,event.getPackageName(),getRootInActiveWindow())
+                    _scanDialogFlag = PingduoduoUtil.pingduoduoFunction(_TAG,event.getPackageName(),getRootInActiveWindow())
                             + MeituanUtil.meituanFunction(_TAG,event.getPackageName(),getRootInActiveWindow());
-                    if(scanDialogFlag != 0 && isServiceInterrupted){
-                        onContinue();
-                        //TODO 自启动监听dialog
+                    if(_scanDialogFlag != 0){
+                        if(!_swipeUpButton._isToggle){
+                            _swipeUpButton.callOnClick();
+                        }
+                        _startApplicationButton._isToggle = false;
+                        _startApplicationButton.setEnabled(true);
                     }
                 }
-                break;
-            case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
-                //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
-                if(event.getSource() != null){
-                    switch (scanDialogFlag){
-                        case PINGDUODUO:
-                            new PingduoduoUtil().cancelDialog(_TAG,getRootInActiveWindow(),this);
-                            break;
-                        case MEITUAN:
-                            new MeituanUtil().cancelDialog(_TAG,getRootInActiveWindow(),this);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                break;
-            default:
-                break;
+            }
+        }
+        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED){
+            //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
+            switch (_scanDialogFlag){
+                case PINGDUODUO:
+                    new PingduoduoUtil().cancelDialog(_TAG,getRootInActiveWindow(),this);
+                    break;
+                case MEITUAN:
+                    new MeituanUtil().cancelDialog(_TAG,getRootInActiveWindow(),this);
+                    break;
+                default:
+                    break;
+            }
+
         }
     }
 

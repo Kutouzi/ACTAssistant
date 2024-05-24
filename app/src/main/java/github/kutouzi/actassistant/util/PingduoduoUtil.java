@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import github.kutouzi.actassistant.enums.ApplicationDefinition;
 import github.kutouzi.actassistant.service.ACTFloatingWindowService;
 import github.kutouzi.actassistant.util.inf.IApplicationUtil;
 
@@ -31,9 +32,9 @@ public class PingduoduoUtil implements IApplicationUtil {
                     }
                 }
             }
-            return 1;
+            return ApplicationDefinition.PINGDUODUO;
         }
-        return 0;
+        return ApplicationDefinition.NULLAPP;
     }
 
     @Override
