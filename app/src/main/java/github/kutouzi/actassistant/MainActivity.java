@@ -56,15 +56,15 @@ public class MainActivity extends AppCompatActivity  {
         _binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(_binding.getRoot());
 
-        CreateClientView();
+        createClientView();
 
-        CreateSettingSwitch();
-        CreateAddClientSwitch();
-        CreateStartFloatingServiceWindowSwitch();
+        createSettingSwitch();
+        createAddClientSwitch();
+        createStartFloatingServiceWindowSwitch();
 
     }
 
-    private void CreateClientView(){
+    private void createClientView(){
         // 寻找clientRecyclerView的xml资源
         _clientRecyclerView = findViewById(R.id.clientView);
 
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity  {
         _clientRecyclerView.setAdapter(adapter);
     }
 
-    private void CreateStartFloatingServiceWindowSwitch(){
+    private void createStartFloatingServiceWindowSwitch(){
         // 创建开启ACT悬浮窗的开关按钮
         _startACTFloatingWindowServiceButton = findViewById(R.id.serviceWindowButton);
 
@@ -109,23 +109,22 @@ public class MainActivity extends AppCompatActivity  {
                     Log.i(_TAG, "用户已获取无障碍权限");
                     if (_isStartACTFloatingWindowServiceButtonPressed) {
                         // 向服务请求销毁悬浮窗
-                        RequestDestroyACTFloatingWindow();
                         _isStartACTFloatingWindowServiceButtonPressed = false;
                     } else {
-                        startService(new Intent(this, ACTFloatingWindowService.class));
                         // 向服务请求开启悬浮窗
-                        RequestCreateACTFloatingWindow();
+                        startService(new Intent(this, ACTFloatingWindowService.class));
+                        requestCreateACTFloatingWindow();
                         // 隐藏此activity
                         moveTaskToBack(true);
                         _isStartACTFloatingWindowServiceButtonPressed = true;
                     }
-                    SwitchOtherButtonStates();
+                    switchOtherButtonStates();
                 }
             }
         });
     }
 
-    private void SwitchOtherButtonStates(){
+    private void switchOtherButtonStates(){
         if(!_allButtonInWindowStartedState){
             _settingButton.setEnabled(true);
             _addClientButton.setEnabled(true);
@@ -139,19 +138,15 @@ public class MainActivity extends AppCompatActivity  {
         }
 
     }
-    private void CreateSettingSwitch(){
+    private void createSettingSwitch(){
         _settingButton = findViewById(R.id.settingButton);
     }
 
-    private void CreateAddClientSwitch(){
+    private void createAddClientSwitch(){
         _addClientButton = findViewById(R.id.addClientButton);
     }
-    private void RequestCreateACTFloatingWindow() {
+    private void requestCreateACTFloatingWindow() {
         sendBroadcast(new Intent(CREATE_OR_DESTROY_ACT_FLOATING_WINGDOW_SERVICE).putExtra("key","Create"));
-    }
-
-    private void RequestDestroyACTFloatingWindow() {
-        sendBroadcast(new Intent(CREATE_OR_DESTROY_ACT_FLOATING_WINGDOW_SERVICE).putExtra("key","Destroy"));
     }
 
     private boolean isAccessibilityServiceEnabled(String serviceName, List<AccessibilityServiceInfo> enabledAccessibilityServiceList) {

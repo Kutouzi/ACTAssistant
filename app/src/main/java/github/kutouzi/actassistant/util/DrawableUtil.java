@@ -9,8 +9,10 @@ import androidx.core.content.ContextCompat;
 
 public class DrawableUtil {
     public static void setDrawableBackground(Context context, View view,int layerIndex,int newColor){
-        LayerDrawable layerDrawable = (LayerDrawable) view.getBackground();
-        GradientDrawable backgroundLayer = (GradientDrawable) layerDrawable.getDrawable(layerIndex);
-        backgroundLayer.setColor(ContextCompat.getColor(context, newColor));
+        if(view.getBackground() != null){
+            LayerDrawable layerDrawable = (LayerDrawable) view.getBackground();
+            GradientDrawable backgroundLayer = (GradientDrawable) layerDrawable.getDrawable(layerIndex);
+            backgroundLayer.setColor(ContextCompat.getColor(context, newColor));
+        }
     }
 }

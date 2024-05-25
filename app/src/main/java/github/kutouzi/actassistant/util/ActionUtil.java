@@ -53,19 +53,15 @@ public class ActionUtil {
         return resources.getDisplayMetrics().heightPixels;
     }
 
-    public static void processSwipe(String TAG, boolean isInterrupted,Resources resources,ACTFloatingWindowService actFloatingWindowService) {
-        if (!isInterrupted) {
-            return;
-        }
+    public static void processSwipe(String TAG,Resources resources,ACTFloatingWindowService actFloatingWindowService) {
         if (pendingAction != null) {
             handler.removeCallbacks(pendingAction);
         }
         pendingAction = () -> {
 
             ActionUtil.performSwipeUp(TAG,resources,actFloatingWindowService);
-            if (!isInterrupted) {
-                handler.postDelayed(pendingAction, RandomtTimeUtil.getRandomDelayTillis(_RANDOM_MIN_SWIPEUP_VALUE,_RANDOM_MAX_SWIPEUP_VALUE));
-            }
+            handler.postDelayed(pendingAction, RandomtTimeUtil.getRandomDelayTillis(_RANDOM_MIN_SWIPEUP_VALUE,_RANDOM_MAX_SWIPEUP_VALUE));
+
         };
         handler.post(pendingAction);
     }
