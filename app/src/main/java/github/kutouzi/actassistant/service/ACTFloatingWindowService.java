@@ -29,8 +29,10 @@ import java.util.Objects;
 
 import github.kutouzi.actassistant.MainActivity;
 import github.kutouzi.actassistant.R;
+import github.kutouzi.actassistant.enums.KeyWordList;
 import github.kutouzi.actassistant.exception.PakageNotFoundException;
 import github.kutouzi.actassistant.util.ActionUtil;
+import github.kutouzi.actassistant.util.DialogUtil;
 import github.kutouzi.actassistant.util.DrawableUtil;
 import github.kutouzi.actassistant.util.MeituanUtil;
 import github.kutouzi.actassistant.util.PingduoduoUtil;
@@ -83,12 +85,12 @@ public class ACTFloatingWindowService extends AccessibilityService {
                         }
                     }else {
                         // 先创建悬浮窗
-                        CreateFloatingWindow();
+                        createFloatingWindow();
                         // 再创建悬浮窗里的开关
-                        CreateListeningDialogSwitch();
-                        CreateStartApplicationSwitch();
-                        CreateReturnMainActivitySwitch();
-                        CreateSwipeUpSwitch();
+                        createListeningDialogSwitch();
+                        createStartApplicationSwitch();
+                        createReturnMainActivitySwitch();
+                        createSwipeUpSwitch();
                         Log.i(_TAG,"悬浮窗已创建");
                     }
                 }
@@ -108,7 +110,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
         }
     }
 
-    private void CreateFloatingWindow(){
+    private void createFloatingWindow(){
         //创建悬浮窗
         if(_windowManager == null) {
             _windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -151,7 +153,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
         return _layoutParams;
     }
 
-    private void RemoveFloatingWindow(){
+    private void removeFloatingWindow(){
         if (_windowView != null) {
             _windowManager.removeView(_windowView);
             _isViewAdded = false;
@@ -159,7 +161,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
         }
     }
 
-    private void CreateListeningDialogSwitch(){
+    private void createListeningDialogSwitch(){
         // 创建监听弹窗开关
         _listeningDialogButton = _windowView.findViewById(R.id.listeningDialogButton);
         _listeningDialogButton.setEnabled(true);
@@ -167,26 +169,26 @@ public class ACTFloatingWindowService extends AccessibilityService {
         _listeningDialogButton.setOnClickListener(v->{
             if (_listeningDialogButton._isToggle){
                 // 如果按钮已经被按过
-                SwitchButtonColor(_listeningDialogButton);
+                switchButtonColor(_listeningDialogButton);
                 _listeningDialogButton._isToggle = false;
-                SwitchOtherButtonStates();
+                switchOtherButtonStates();
                 Log.i(_TAG,"服务开关已被禁用");
             }else {
                 // 如果按钮没按过
-                SwitchButtonColor(_listeningDialogButton);
+                switchButtonColor(_listeningDialogButton);
                 _listeningDialogButton._isToggle = true;
-                SwitchOtherButtonStates();
+                switchOtherButtonStates();
                 Log.i(_TAG,"服务开关已被禁用");
             }
         });
     }
 
-    private void CreateStartApplicationSwitch(){
+    private void createStartApplicationSwitch(){
         // 创建开启引用开关
         _startApplicationButton = _windowView.findViewById(R.id.startApplicationButton);
         _startApplicationButton.setOnClickListener(v->{
             try{
-                RequestStartApplication(PINGDUODUO_PAKAGENAME);
+                requestStartApplication(PINGDUODUO_PAKAGENAME);
                 _startApplicationButton._isToggle = true;
                 _startApplicationButton.setEnabled(false);
             }catch (PakageNotFoundException e){
@@ -196,7 +198,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
         });
     }
 
-    private void RequestStartApplication(String pakageName) throws PakageNotFoundException {
+    private void requestStartApplication(String pakageName) throws PakageNotFoundException {
         Intent intent = getPackageManager().getLaunchIntentForPackage(pakageName);
         if (intent != null){
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -207,7 +209,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     }
 
-    private void CreateReturnMainActivitySwitch(){
+    private void createReturnMainActivitySwitch(){
         //创建返回开关
         _returnMainActivityButton = _windowView.findViewById(R.id.returnMainActivityButton);
         _returnMainActivityButton.setOnClickListener(v->{
@@ -218,7 +220,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
         });
     }
 
-    private void CreateSwipeUpSwitch() {
+    private void createSwipeUpSwitch() {
         //创建上划开关
         _swipeUpButton = _windowView.findViewById(R.id.swipeUpButton);
         _swipeUpButton.setOnClickListener(v->{
@@ -226,23 +228,23 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 // 如果上划按钮被按过
                 // 停止上划
                 ActionUtil.removeSwipeAction();
-                SwitchButtonColor(_swipeUpButton);
+                switchButtonColor(_swipeUpButton);
                 _swipeUpButton._isToggle = false;
-                SwitchOtherButtonStates();
+                switchOtherButtonStates();
                 GT.toast_time("上划结束",1000);
             }else {
                 // 如果上划按钮没被按过
                 // 直接开始上划
                 ActionUtil.processSwipe(_TAG,getResources(),this);
-                SwitchButtonColor(_swipeUpButton);
+                switchButtonColor(_swipeUpButton);
                 _swipeUpButton._isToggle = true;
-                SwitchOtherButtonStates();
+                switchOtherButtonStates();
                 GT.toast_time("上划开始",1000);
             }
         });
     }
 
-    private void SwitchOtherButtonStates(){
+    private void switchOtherButtonStates(){
         if(_swipeUpButton._isToggle || _listeningDialogButton._isToggle){
             // ft、tf 禁用
             // 如果这两个按钮任意一个被按下过
@@ -262,7 +264,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
         }
     }
 
-    private void SwitchButtonColor(ToggleButtonLayout toggleButtonLayout){
+    private void switchButtonColor(ToggleButtonLayout toggleButtonLayout){
         if (toggleButtonLayout._isToggle){
             // 如果已经被按下，就变按下去的颜色
             DrawableUtil.setDrawableBackground(this,toggleButtonLayout,1,R.color.button_color);
@@ -299,10 +301,10 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
                 switch (_scanDialogFlag) {
                     case PINGDUODUO:
-                        PingduoduoUtil.cancelDialog(_TAG, getRootInActiveWindow(), this);
+                        DialogUtil.cancelDialog(_TAG,getRootInActiveWindow(), this, KeyWordList.pingduoduoKeyWordList);
                         break;
                     case MEITUAN:
-                        MeituanUtil.cancelDialog(_TAG, getRootInActiveWindow(), this);
+                        DialogUtil.cancelDialog(_TAG, getRootInActiveWindow(), this,KeyWordList.meituanKeyWordList);
                         break;
                     default:
                         break;
@@ -314,7 +316,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     @Override
     public void onInterrupt() {
-        RemoveFloatingWindow();
+        removeFloatingWindow();
     }
 
     @Override

@@ -13,9 +13,6 @@ import github.kutouzi.actassistant.enums.ApplicationDefinition;
 import github.kutouzi.actassistant.service.ACTFloatingWindowService;
 
 public class MeituanUtil {
-    private static final List<String> meituanKeyWordList = (ArrayList<String>) Stream.of("现金秒到账", "開")
-            .collect(Collectors.toList());
-
     public static int meituanFunction(String TAG,CharSequence packageName,AccessibilityNodeInfo nodeInfo){
         if(packageName.toString().contains("meituan")){
             Log.i(TAG,"美团正在运行于前台");
@@ -36,20 +33,4 @@ public class MeituanUtil {
 
     }
 
-    public static void cancelDialog(String TAG, AccessibilityNodeInfo nodeInfo, ACTFloatingWindowService actFloatingWindowService) {
-        for (String s: meituanKeyWordList) {
-            if(nodeInfo.findAccessibilityNodeInfosByText(s) != null){
-                List<AccessibilityNodeInfo> jiangliList = nodeInfo.findAccessibilityNodeInfosByText(s);
-                for (AccessibilityNodeInfo info:
-                        jiangliList) {
-                    Log.i(TAG,"发现'"+ s + "'节点");
-                    actFloatingWindowService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
-                    AccessibilityNodeInfo i = TraverseNodeUtil.traverseParent(TAG,info);
-                    if(i != null){
-                        i.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    }
-                }
-            }
-        }
-    }
 }
