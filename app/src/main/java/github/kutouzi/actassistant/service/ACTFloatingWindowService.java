@@ -350,22 +350,6 @@ public class ACTFloatingWindowService extends AccessibilityService {
                     }
                 }
             }
-
-            if(_listeningDialogButton._isToggle) {
-                //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
-                switch (_scanDialogFlag) {
-                    case PINGDUODUO:
-                        DialogUtil.cancelDialog(_TAG,getRootInActiveWindow(), this, KeyWordList.pingduoduoKeyWordList);
-                        break;
-                    case MEITUAN:
-                        DialogUtil.cancelDialog(_TAG, getRootInActiveWindow(), this,KeyWordList.meituanKeyWordList);
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-
         }
     }
 
