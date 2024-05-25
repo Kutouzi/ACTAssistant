@@ -21,6 +21,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 
+import androidx.annotation.NonNull;
+
 import com.gsls.gt.GT;
 
 import java.util.Objects;
@@ -42,22 +44,26 @@ public class ACTFloatingWindowService extends AccessibilityService {
     //悬浮窗窗体相关
     private WindowManager _windowManager;
     private View _windowView;
-    private WindowManager.LayoutParams _layoutParams;
     //////////////////////////////////
 
 
     //////////////////////
     //悬浮窗内按钮相关
     private ToggleButtonLayout _returnMainActivityButton;
+
     private ToggleButtonLayout _listeningDialogButton;
+
     private ToggleButtonLayout _startApplicationButton;
+
     private ToggleButtonLayout _swipeUpButton;
+
     //////////////////////////////////
 
 
     //////////////////////
     //全局标记相关
     private static int _scanDialogFlag = 0;
+    private boolean _isViewAdded = false;
     //////////////////////////////////
 
     @Override
@@ -70,22 +76,21 @@ public class ACTFloatingWindowService extends AccessibilityService {
         public void onReceive(Context context, Intent intent) {
             if (CREATE_OR_DESTROY_ACT_FLOATING_WINGDOW_SERVICE.equals(intent.getAction())) {
                 if(Objects.equals(intent.getStringExtra("key"), "Create")){
-                    if(_windowView != null){
-                        //如果这个窗口还存在，就是重复创建悬浮窗，销毁掉当前的并且回到MainActivity
-                        _returnMainActivityButton.callOnClick();
+                    if(_windowManager != null){
+                        //如果这个窗口还存在，就是重复创建悬浮窗
+                        if(!_isViewAdded){
+                            _windowManager.addView(_windowView,getLayoutParams());
+                        }
+                    }else {
+                        // 先创建悬浮窗
+                        CreateFloatingWindow();
+                        // 再创建悬浮窗里的开关
+                        CreateListeningDialogSwitch();
+                        CreateStartApplicationSwitch();
+                        CreateReturnMainActivitySwitch();
+                        CreateSwipeUpSwitch();
+                        Log.i(_TAG,"悬浮窗已创建");
                     }
-                    // 先创建悬浮窗
-                    CreateFloatingWindow();
-                    // 再创建悬浮窗里的开关
-                    CreateListeningDialogSwitch();
-                    CreateStartApplicationSwitch();
-                    CreateReturnMainActivitySwitch();
-                    CreateSwipeUpSwitch();
-
-                    Log.i(_TAG,"悬浮窗已创建");
-                }else if (Objects.equals(intent.getStringExtra("key"), "Destroy")){
-                    RemoveFloatingWindow();
-                    Log.i(_TAG,"悬浮窗已被销毁");
                 }
             }
         }
@@ -94,6 +99,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
     @Override
     public void onCreate() {
         super.onCreate();
+
         IntentFilter filter = new IntentFilter(CREATE_OR_DESTROY_ACT_FLOATING_WINGDOW_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED);
@@ -104,8 +110,25 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     private void CreateFloatingWindow(){
         //创建悬浮窗
-        _windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        if(_windowManager == null) {
+            _windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        }
 
+        Display display = _windowManager.getDefaultDisplay();
+        display.getSize(new Point());
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        _windowView = inflater.inflate(R.layout.window_view, null);
+
+        if (_windowView != null) {
+            _windowManager.addView(_windowView, getLayoutParams());
+            _isViewAdded = true;
+        }
+    }
+
+    @NonNull
+    private static WindowManager.LayoutParams getLayoutParams() {
+        WindowManager.LayoutParams _layoutParams;
         // 设置悬浮窗参数
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             _layoutParams = new WindowManager.LayoutParams(
@@ -124,42 +147,35 @@ public class ACTFloatingWindowService extends AccessibilityService {
                     PixelFormat.TRANSLUCENT
             );
         }
-        Display display = _windowManager.getDefaultDisplay();
-        display.getSize(new Point());
         _layoutParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-
-        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        _windowView = inflater.inflate(R.layout.window_view, null);
-
-        if (_windowView != null) {
-            _windowManager.addView(_windowView, _layoutParams);
-        }
+        return _layoutParams;
     }
 
     private void RemoveFloatingWindow(){
         if (_windowView != null) {
             _windowManager.removeView(_windowView);
+            _isViewAdded = false;
+            Log.i(_TAG, "悬浮窗被移除");
         }
     }
 
     private void CreateListeningDialogSwitch(){
         // 创建监听弹窗开关
         _listeningDialogButton = _windowView.findViewById(R.id.listeningDialogButton);
-
         _listeningDialogButton.setEnabled(true);
         // 根据按钮状态开启和禁用
         _listeningDialogButton.setOnClickListener(v->{
             if (_listeningDialogButton._isToggle){
                 // 如果按钮已经被按过
                 SwitchButtonColor(_listeningDialogButton);
-                SwitchOtherButtonStates();
                 _listeningDialogButton._isToggle = false;
+                SwitchOtherButtonStates();
                 Log.i(_TAG,"服务开关已被禁用");
             }else {
                 // 如果按钮没按过
                 SwitchButtonColor(_listeningDialogButton);
-                SwitchOtherButtonStates();
                 _listeningDialogButton._isToggle = true;
+                SwitchOtherButtonStates();
                 Log.i(_TAG,"服务开关已被禁用");
             }
         });
@@ -198,8 +214,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            onDestroy();
-
+            onInterrupt();
         });
     }
 
@@ -211,87 +226,83 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 // 如果上划按钮被按过
                 // 停止上划
                 ActionUtil.removeSwipeAction();
-                //ActionUtil.processSwipe(_TAG,_swipeUpButton._isToggle,getResources(),this);
                 SwitchButtonColor(_swipeUpButton);
-                SwitchOtherButtonStates();
                 _swipeUpButton._isToggle = false;
+                SwitchOtherButtonStates();
                 GT.toast_time("上划结束",1000);
             }else {
                 // 如果上划按钮没被按过
                 // 直接开始上划
-                ActionUtil.processSwipe(_TAG,_swipeUpButton._isToggle,getResources(),this);
+                ActionUtil.processSwipe(_TAG,getResources(),this);
                 SwitchButtonColor(_swipeUpButton);
-                SwitchOtherButtonStates();
                 _swipeUpButton._isToggle = true;
+                SwitchOtherButtonStates();
                 GT.toast_time("上划开始",1000);
             }
         });
     }
 
     private void SwitchOtherButtonStates(){
-        if(_swipeUpButton._isToggle || _listeningDialogButton._isToggle) {
+        if(_swipeUpButton._isToggle || _listeningDialogButton._isToggle){
+            // ft、tf 禁用
             // 如果这两个按钮任意一个被按下过
-            _returnMainActivityButton.setEnabled(false);
-            _startApplicationButton.setEnabled(false);
-            DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,0,R.color.button_color);
-            DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,1,R.color.button_rounded_color);
-            DrawableUtil.setDrawableBackground(this,_startApplicationButton,0,R.color.button_color);
-            DrawableUtil.setDrawableBackground(this,_startApplicationButton,1,R.color.button_rounded_color);
-            Log.i(_TAG,"悬浮窗开启应用按钮和返回按钮已禁用");
-        }else {
+            _returnMainActivityButton.setClickable(false);
+            _startApplicationButton.setClickable(false);
+            DrawableUtil.setDrawableBackground(this, _returnMainActivityButton, 1, R.color.disable_button_rounded_color);
+            DrawableUtil.setDrawableBackground(this, _startApplicationButton, 1, R.color.disable_button_rounded_color);
+            Log.i(_TAG, "悬浮窗开启应用按钮和返回按钮已禁用");
+        }else{
             // 如果没有被按下过
-            _returnMainActivityButton.setEnabled(true);
-            _startApplicationButton.setEnabled(true);
-            DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,0,R.color.disable_button_color);
-            DrawableUtil.setDrawableBackground(this,_returnMainActivityButton,1,R.color.disable_button_rounded_color);
-            DrawableUtil.setDrawableBackground(this,_startApplicationButton,0,R.color.disable_button_color);
-            DrawableUtil.setDrawableBackground(this,_startApplicationButton,1,R.color.disable_button_rounded_color);
-            Log.i(_TAG,"悬浮窗开启应用按钮和返回按钮已启用");
+            _returnMainActivityButton.setClickable(true);
+            _startApplicationButton.setClickable(true);
+            DrawableUtil.setDrawableBackground(this, _returnMainActivityButton, 1, R.color.button_color);
+            DrawableUtil.setDrawableBackground(this, _startApplicationButton, 1, R.color.button_color);
+            Log.i(_TAG, "悬浮窗开启应用按钮和返回按钮已启用");
+
         }
     }
 
     private void SwitchButtonColor(ToggleButtonLayout toggleButtonLayout){
         if (toggleButtonLayout._isToggle){
             // 如果已经被按下，就变按下去的颜色
-            DrawableUtil.setDrawableBackground(this,toggleButtonLayout,0,R.color.pressed_button_color);
-            DrawableUtil.setDrawableBackground(this,toggleButtonLayout,1,R.color.pressed_button_rounded_color);
+            DrawableUtil.setDrawableBackground(this,toggleButtonLayout,1,R.color.button_color);
         }else {
             // 如果没被按下过，就变没按下去的颜色
-            DrawableUtil.setDrawableBackground(this,toggleButtonLayout,0,R.color.button_color);
-            DrawableUtil.setDrawableBackground(this,toggleButtonLayout,1,R.color.button_rounded_color);
+            DrawableUtil.setDrawableBackground(this,toggleButtonLayout,1,R.color.pressed_button_color);
         }
 
     }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // 需要启动应用按钮被按过才触发检测
-        if(_startApplicationButton._isToggle){
-            // 还需要窗口变化才能检测
-            if(event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED){
-                if(getRootInActiveWindow().getPackageName() != null){
-                    //执行检查拼多多、美团等软件是否启动的逻辑
-                    _scanDialogFlag = PingduoduoUtil.pingduoduoFunction(_TAG,event.getPackageName(),getRootInActiveWindow())
-                            + MeituanUtil.meituanFunction(_TAG,event.getPackageName(),getRootInActiveWindow());
-                    if(_scanDialogFlag != 0){
-                        if(!_swipeUpButton._isToggle){
-                            _swipeUpButton.callOnClick();
+        if(_windowView != null){
+            // 需要启动应用按钮被按过才触发检测
+            if(_startApplicationButton._isToggle){
+                // 还需要窗口变化才能检测
+                if(event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED){
+                    if(getRootInActiveWindow().getPackageName() != null){
+                        //执行检查拼多多、美团等软件是否启动的逻辑
+                        _scanDialogFlag = PingduoduoUtil.pingduoduoFunction(_TAG,event.getPackageName(),getRootInActiveWindow())
+                                + MeituanUtil.meituanFunction(_TAG,event.getPackageName(),getRootInActiveWindow());
+                        if(_scanDialogFlag != 0){
+                            if(!_swipeUpButton._isToggle){
+                                // 如果没有被按下过
+                                _swipeUpButton.callOnClick();
+                            }
+                            _startApplicationButton._isToggle = false;
+                            _startApplicationButton.setEnabled(true);
                         }
-                        _startApplicationButton._isToggle = false;
-                        _startApplicationButton.setEnabled(true);
                     }
                 }
             }
-        }
-        if(_listeningDialogButton._isToggle) {
-            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            if(_listeningDialogButton._isToggle) {
                 //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
                 switch (_scanDialogFlag) {
                     case PINGDUODUO:
-                        new PingduoduoUtil().cancelDialog(_TAG, getRootInActiveWindow(), this);
+                        PingduoduoUtil.cancelDialog(_TAG, getRootInActiveWindow(), this);
                         break;
                     case MEITUAN:
-                        new MeituanUtil().cancelDialog(_TAG, getRootInActiveWindow(), this);
+                        MeituanUtil.cancelDialog(_TAG, getRootInActiveWindow(), this);
                         break;
                     default:
                         break;
@@ -303,15 +314,13 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     @Override
     public void onInterrupt() {
-
+        RemoveFloatingWindow();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         unregisterReceiver(broadcastReceiver);
-        RemoveFloatingWindow();
-        stopSelf();
-        Log.i(_TAG,"服务被释放");
+        Log.i(_TAG, "服务被释放");
     }
 }

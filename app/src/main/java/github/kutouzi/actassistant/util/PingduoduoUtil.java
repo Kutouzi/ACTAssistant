@@ -11,9 +11,8 @@ import java.util.stream.Stream;
 
 import github.kutouzi.actassistant.enums.ApplicationDefinition;
 import github.kutouzi.actassistant.service.ACTFloatingWindowService;
-import github.kutouzi.actassistant.util.inf.IApplicationUtil;
 
-public class PingduoduoUtil implements IApplicationUtil {
+public class PingduoduoUtil {
 
     private static final List<String> pingduoduoKeyWordList = (ArrayList<String>) Stream.of("领取今日奖励","专属现金红包","立即提现","领取今日现金","明日继续来领","打款金额")
             .collect(Collectors.toList());
@@ -37,8 +36,7 @@ public class PingduoduoUtil implements IApplicationUtil {
         return ApplicationDefinition.NULLAPP;
     }
 
-    @Override
-    public void cancelDialog(String TAG, AccessibilityNodeInfo nodeInfo, ACTFloatingWindowService actFloatingWindowService) {
+    public static void cancelDialog(String TAG, AccessibilityNodeInfo nodeInfo, ACTFloatingWindowService actFloatingWindowService) {
         for (String s: pingduoduoKeyWordList) {
             if(nodeInfo.findAccessibilityNodeInfosByText(s) != null){
                 List<AccessibilityNodeInfo> jiangliList = nodeInfo.findAccessibilityNodeInfosByText(s);

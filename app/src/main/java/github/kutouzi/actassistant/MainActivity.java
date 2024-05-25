@@ -109,11 +109,10 @@ public class MainActivity extends AppCompatActivity  {
                     Log.i(_TAG, "用户已获取无障碍权限");
                     if (_isStartACTFloatingWindowServiceButtonPressed) {
                         // 向服务请求销毁悬浮窗
-                        RequestDestroyACTFloatingWindow();
                         _isStartACTFloatingWindowServiceButtonPressed = false;
                     } else {
-                        startService(new Intent(this, ACTFloatingWindowService.class));
                         // 向服务请求开启悬浮窗
+                        startService(new Intent(this, ACTFloatingWindowService.class));
                         RequestCreateACTFloatingWindow();
                         // 隐藏此activity
                         moveTaskToBack(true);
