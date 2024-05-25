@@ -301,10 +301,10 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
                 switch (_scanDialogFlag) {
                     case PINGDUODUO:
-                        DialogUtil.cancelDialog(_TAG,getRootInActiveWindow(), this, KeyWordList.pingduoduoKeyWordList);
+                        DialogUtil.cancelDialog(_TAG,getRootInActiveWindow(), this, KeyWordList.pingduoduoCancelableKeyWordList);
                         break;
                     case MEITUAN:
-                        DialogUtil.cancelDialog(_TAG, getRootInActiveWindow(), this,KeyWordList.meituanKeyWordList);
+                        DialogUtil.cancelDialog(_TAG, getRootInActiveWindow(), this,KeyWordList.meituanCancelableKeyWordList);
                         break;
                     default:
                         break;
