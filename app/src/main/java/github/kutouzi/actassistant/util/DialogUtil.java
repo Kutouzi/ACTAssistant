@@ -27,9 +27,9 @@ public class DialogUtil {
     }
     public static void cancelDialog(String TAG,AccessibilityNodeInfo nodeInfo,ACTFloatingWindowService actFloatingWindowService,List<String> keyWordList){
         for (String s:keyWordList) {
-            if(nodeInfo.findAccessibilityNodeInfosByText(s) != null){
+            if(!nodeInfo.findAccessibilityNodeInfosByText(s).isEmpty()){
                 actFloatingWindowService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
-                Log.i(TAG,"关闭了弹窗");
+                Log.i(TAG,"找到'" + s + "'关闭了弹窗");
             }
         }
     }

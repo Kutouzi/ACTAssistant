@@ -9,12 +9,12 @@
     <LinearLayout
         android:id="@+id/functionButtonLayout"
         android:layout_width="wrap_content"
-        android:layout_height="40dp"
+        android:layout_height="220dp"
         android:background="@drawable/backgroudlayout_rounded_border"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <github.kutouzi.actassistant.view.ToggleButtonLayout
             android:id="@+id/startApplicationButton"
@@ -36,6 +36,25 @@
         </github.kutouzi.actassistant.view.ToggleButtonLayout>
 
         <github.kutouzi.actassistant.view.ToggleButtonLayout
+            android:id="@+id/scanApplicationButton"
+            android:layout_width="60dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/button_rounded_border"
+            android:orientation="horizontal"
+            android:padding="2dp">
+
+            <ImageView
+                android:id="@+id/scanApplicationImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:contentDescription="扫描应用"
+                android:src="@android:drawable/ic_menu_search" />
+
+        </github.kutouzi.actassistant.view.ToggleButtonLayout>
+
+        <github.kutouzi.actassistant.view.ToggleButtonLayout
             android:id="@+id/listeningDialogButton"
             android:layout_width="60dp"
             android:layout_height="40dp"
@@ -53,6 +72,7 @@
                 android:src="@android:drawable/ic_menu_mylocation" />
 
         </github.kutouzi.actassistant.view.ToggleButtonLayout>
+
 
         <github.kutouzi.actassistant.view.ToggleButtonLayout
             android:id="@+id/swipeUpButton"
