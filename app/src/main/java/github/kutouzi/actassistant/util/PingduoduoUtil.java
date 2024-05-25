@@ -16,6 +16,7 @@ public class PingduoduoUtil {
         }
         return ApplicationDefinition.NULLAPP;
     }
+
     public static void switchToVideo(String TAG,AccessibilityNodeInfo nodeInfo){
         if (nodeInfo != null){
             List<AccessibilityNodeInfo> list = nodeInfo.findAccessibilityNodeInfosByText("多多视频");

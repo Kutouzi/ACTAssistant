@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class KeyWordList {
+  
     public static final List<String> pingduoduoClickableKeyWordList = Stream.of("专属现金红包")
             .collect(Collectors.toList());
     public static final List<String> meituanClickableKeyWordList = null;

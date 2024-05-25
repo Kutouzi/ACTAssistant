@@ -9,6 +9,7 @@ import java.util.List;
 import github.kutouzi.actassistant.service.ACTFloatingWindowService;
 
 public class DialogUtil {
+
     public static void clickDialog(String TAG, AccessibilityNodeInfo nodeInfo, ACTFloatingWindowService actFloatingWindowService, List<String> keyWordList) {
         for (String s: keyWordList) {
             if(nodeInfo.findAccessibilityNodeInfosByText(s) != null){
@@ -25,6 +26,7 @@ public class DialogUtil {
             }
         }
     }
+
     public static void cancelDialog(String TAG,AccessibilityNodeInfo nodeInfo,ACTFloatingWindowService actFloatingWindowService,List<String> keyWordList){
         for (String s:keyWordList) {
             if(!nodeInfo.findAccessibilityNodeInfosByText(s).isEmpty()){

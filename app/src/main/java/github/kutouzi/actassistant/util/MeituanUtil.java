@@ -15,6 +15,7 @@ public class MeituanUtil {
         }
         return ApplicationDefinition.NULLAPP;
     }
+
     public static void switchToVideo(String TAG,AccessibilityNodeInfo nodeInfo){
         if (nodeInfo != null){
             List<AccessibilityNodeInfo> list = nodeInfo.findAccessibilityNodeInfosByText("视频");
