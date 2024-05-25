@@ -20,6 +20,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 
@@ -52,11 +53,9 @@ public class ACTFloatingWindowService extends AccessibilityService {
     //////////////////////
     //悬浮窗内按钮相关
     private ToggleButtonLayout _returnMainActivityButton;
-
+    private ToggleButtonLayout _scanApplicationButton;
     private ToggleButtonLayout _listeningDialogButton;
-
     private ToggleButtonLayout _startApplicationButton;
-
     private ToggleButtonLayout _swipeUpButton;
 
     //////////////////////////////////
@@ -64,7 +63,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     //////////////////////
     //全局标记相关
-    private static int _scanDialogFlag = 0;
+    private static int _scanApplicationFlag = 0;
     private boolean _isViewAdded = false;
     //////////////////////////////////
 
@@ -91,6 +90,10 @@ public class ACTFloatingWindowService extends AccessibilityService {
                         createStartApplicationSwitch();
                         createReturnMainActivitySwitch();
                         createSwipeUpSwitch();
+
+                        createScanApplicationSwitch();
+
+
                         Log.i(_TAG,"悬浮窗已创建");
                     }
                 }
@@ -101,7 +104,6 @@ public class ACTFloatingWindowService extends AccessibilityService {
     @Override
     public void onCreate() {
         super.onCreate();
-
         IntentFilter filter = new IntentFilter(CREATE_OR_DESTROY_ACT_FLOATING_WINGDOW_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED);
@@ -149,7 +151,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
                     PixelFormat.TRANSLUCENT
             );
         }
-        _layoutParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        _layoutParams.gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
         return _layoutParams;
     }
 
@@ -174,6 +176,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 switchOtherButtonStates();
                 Log.i(_TAG,"服务开关已被禁用");
             }else {
+                //switchFunctionToDialog();
                 // 如果按钮没按过
                 switchButtonColor(_listeningDialogButton);
                 _listeningDialogButton._isToggle = true;
@@ -207,6 +210,53 @@ public class ACTFloatingWindowService extends AccessibilityService {
             throw new PakageNotFoundException(PINGDUODUO_PAKAGENAME);
         }
 
+    }
+
+
+    private void createScanApplicationSwitch(){
+        _scanApplicationButton = _windowView.findViewById(R.id.scanApplicationButton);
+        _scanApplicationButton.setOnClickListener(v -> {
+            _scanApplicationFlag = PingduoduoUtil.scanPingduoduoApplication(_TAG,getRootInActiveWindow().getPackageName())
+                    + MeituanUtil.scanMeituanApplication(_TAG,getRootInActiveWindow().getPackageName());
+            applicationAnnounce();
+            findApplicationAction();
+        });
+    }
+    private void findApplicationAction(){
+        if(_scanApplicationFlag != 0){
+            switch (_scanApplicationFlag){
+                case PINGDUODUO:
+                    PingduoduoUtil.switchToVideo(_TAG,getRootInActiveWindow());
+                case MEITUAN:
+                    MeituanUtil.switchToVideo(_TAG,getRootInActiveWindow());
+            }
+            if(!_swipeUpButton._isToggle){
+                // 如果没有被按下过
+                _swipeUpButton.callOnClick();
+            }
+            if(!_listeningDialogButton._isToggle){
+                // 如果没有被按下过
+                _listeningDialogButton.callOnClick();
+            }
+        }
+    }
+    private void applicationAnnounce(){
+        if(_scanApplicationFlag != 0) {
+            String s;
+            switch (_scanApplicationFlag) {
+                case PINGDUODUO:
+                    s = "拼多多";
+                    GT.toast_time("找到" + s + "应用", 1000);
+                    break;
+                case MEITUAN:
+                    s = "美团";
+                    GT.toast_time("找到" + s + "应用", 1000);
+                    break;
+                default:
+                    GT.toast_time("没找到受支持的应用", 1000);
+                    break;
+            }
+        }
     }
 
     private void createReturnMainActivitySwitch(){
@@ -246,19 +296,22 @@ public class ACTFloatingWindowService extends AccessibilityService {
 
     private void switchOtherButtonStates(){
         if(_swipeUpButton._isToggle || _listeningDialogButton._isToggle){
-            // ft、tf 禁用
             // 如果这两个按钮任意一个被按下过
             _returnMainActivityButton.setClickable(false);
             _startApplicationButton.setClickable(false);
+            _scanApplicationButton.setClickable(false);
             DrawableUtil.setDrawableBackground(this, _returnMainActivityButton, 1, R.color.disable_button_rounded_color);
             DrawableUtil.setDrawableBackground(this, _startApplicationButton, 1, R.color.disable_button_rounded_color);
+            DrawableUtil.setDrawableBackground(this, _scanApplicationButton, 1, R.color.disable_button_rounded_color);
             Log.i(_TAG, "悬浮窗开启应用按钮和返回按钮已禁用");
         }else{
             // 如果没有被按下过
             _returnMainActivityButton.setClickable(true);
             _startApplicationButton.setClickable(true);
+            _scanApplicationButton.setClickable(true);
             DrawableUtil.setDrawableBackground(this, _returnMainActivityButton, 1, R.color.button_color);
             DrawableUtil.setDrawableBackground(this, _startApplicationButton, 1, R.color.button_color);
+            DrawableUtil.setDrawableBackground(this, _scanApplicationButton, 1, R.color.button_color);
             Log.i(_TAG, "悬浮窗开启应用按钮和返回按钮已启用");
 
         }
@@ -274,29 +327,30 @@ public class ACTFloatingWindowService extends AccessibilityService {
         }
 
     }
+    private void switchFunctionToDialog(AccessibilityNodeInfo info){
+        switch (_scanApplicationFlag) {
+            case PINGDUODUO:
+                DialogUtil.cancelDialog(_TAG, info, this, KeyWordList.pingduoduoCancelableKeyWordList);
+                break;
+            case MEITUAN:
+                DialogUtil.cancelDialog(_TAG, info, this, KeyWordList.meituanCancelableKeyWordList);
+                break;
+            default:
+                break;
+        }
+    }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if(_windowView != null){
-            // 需要启动应用按钮被按过才触发检测
-            if(_startApplicationButton._isToggle){
-                // 还需要窗口变化才能检测
-                if(event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED){
-                    if(getRootInActiveWindow().getPackageName() != null){
-                        //执行检查拼多多、美团等软件是否启动的逻辑
-                        _scanDialogFlag = PingduoduoUtil.pingduoduoFunction(_TAG,event.getPackageName(),getRootInActiveWindow())
-                                + MeituanUtil.meituanFunction(_TAG,event.getPackageName(),getRootInActiveWindow());
-                        if(_scanDialogFlag != 0){
-                            if(!_swipeUpButton._isToggle){
-                                // 如果没有被按下过
-                                _swipeUpButton.callOnClick();
-                            }
-                            _startApplicationButton._isToggle = false;
-                            _startApplicationButton.setEnabled(true);
-                        }
+            if(event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                if (_listeningDialogButton._isToggle) {
+                    if(event.getSource() != null){
+                        switchFunctionToDialog(event.getSource());
                     }
                 }
             }
+
             if(_listeningDialogButton._isToggle) {
                 //检查拼多多、美团等软件是否启动后才会进入搜索dialog逻辑
                 switch (_scanDialogFlag) {
@@ -311,6 +365,7 @@ public class ACTFloatingWindowService extends AccessibilityService {
                 }
 
             }
+
         }
     }
 
